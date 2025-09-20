@@ -1,0 +1,70 @@
+name: 'zensoku'
+version: 25.0.1+51
+publish_to: none
+environment: 
+  sdk: '^3.5.3'
+description: BreatheEase asthma tracking app
+dependencies: 
+  app_links: ^6.3.2
+  bloc: '^8.1.2'
+  cloud_firestore: ^5.5.0
+  cloud_functions: ^5.1.5
+  cupertino_icons: '^1.0.2'
+  equatable: '^2.0.5'
+  fl_chart: ^0.69.2
+  flow_builder: ^0.1.0
+  flutter: 
+    sdk: flutter
+  flutter_bloc: '^8.1.1'
+  flutter_dotenv: '^5.1.0'
+  flutter_expandable_fab: ^2.3.0
+  flutter_social_button: '^1.1.4+1'
+  flutter_svg: '^2.0.7'
+  font_awesome_flutter: '^10.4.0'
+  formz: ^0.8.0
+  hexcolor: '^3.0.1'
+  hydrated_bloc: '^9.1.2'
+  intl: ^0.20.1
+  json_annotation: '^4.9.0'
+  logger: ^2.5.0
+  mocktail: ^1.0.4
+  package_info_plus: ^8.1.1
+  path: ^1.9.1
+  path_provider: '^2.1.1'
+  rxdart: ^0.28.0
+  sleek_circular_slider: '^2.0.1'
+  sqflite: ^2.3.3+1
+  sqflite_common: ^2.5.4
+  sqflite_common_ffi: ^2.3.6
+  statistics: ^1.2.0
+  url_launcher: ^6.3.1
+  uuid: '^4.2.2'
+
+dev_dependencies: 
+  bloc_test: '^9.1.3'
+  build_runner: '^2.4.4'
+  flutter_launcher_icons: ^0.14.1
+  flutter_lints: ^5.0.0
+  flutter_test: 
+    sdk: flutter
+  freezed: '^2.3.4'
+  json_serializable: '^6.7.0'
+  lint: '2.3.0'
+  pubspec_dependency_sorter: '^1.0.4'
+flutter_launcher_icons: 
+  android: 'launcher_icon'
+  image_path_android: 'assets/icon_android.png'
+  ios: true
+  image_path_ios: 'assets/icon_ios.png'
+  remove_alpha_ios: true
+flutter: 
+  uses-material-design: true
+  assets: 
+    - assets/welcome.svg
+    - assets/jogger.svg
+    - 'assets/bicycle_rider.svg'
+    - assets/logo.png
+    - assets/reliever.svg
+    - assets/preventer.svg
+    - assets/lungs.svg
+    - .env
