@@ -42,36 +42,55 @@ class SettingsPage extends StatelessWidget {
                             TextStyle(fontSize: ZensokuTheme.baseHeading1Size),
                       ),
                     ),
-                    BlocBuilder<SettingsCubit, ZensokuThemeMode>(
+                    BlocBuilder<SettingsCubit, BreatheEaseSettings>(
                       builder: (context, state) {
-                        return Row(
+                        return Column(
                           children: [
-                            Expanded(
-                              child: DropdownButton<ZensokuThemeMode>(
-                                isExpanded: true,
-                                value: state,
-                                onChanged: (ZensokuThemeMode? themeVal) {
-                                  final newThemeVal =
-                                      themeVal ?? ZensokuThemeMode.system;
-                                  settingsCubit.updateTheme(newThemeVal);
-                                },
-                                items: const <DropdownMenuItem<
-                                    ZensokuThemeMode>>[
-                                  DropdownMenuItem<ZensokuThemeMode>(
-                                    value: ZensokuThemeMode.light,
-                                    child: Text('Light'),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButton<ZensokuThemeMode>(
+                                    isExpanded: true,
+                                    value: state.mode,
+                                    onChanged: (ZensokuThemeMode? themeVal) {
+                                      final newThemeVal =
+                                          themeVal ?? ZensokuThemeMode.system;
+                                      settingsCubit.updateTheme(newThemeVal);
+                                    },
+                                    items: const <DropdownMenuItem<
+                                        ZensokuThemeMode>>[
+                                      DropdownMenuItem<ZensokuThemeMode>(
+                                        value: ZensokuThemeMode.light,
+                                        child: Text('Light'),
+                                      ),
+                                      DropdownMenuItem<ZensokuThemeMode>(
+                                        value: ZensokuThemeMode.dark,
+                                        child: Text('Dark'),
+                                      ),
+                                      DropdownMenuItem<ZensokuThemeMode>(
+                                        value: ZensokuThemeMode.system,
+                                        child: Text('System'),
+                                      ),
+                                    ],
                                   ),
-                                  DropdownMenuItem<ZensokuThemeMode>(
-                                    value: ZensokuThemeMode.dark,
-                                    child: Text('Dark'),
-                                  ),
-                                  DropdownMenuItem<ZensokuThemeMode>(
-                                    value: ZensokuThemeMode.system,
-                                    child: Text('System'),
-                                  ),
-                                ],
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                              child: Text(
+                                'Features',
+                                style: TextStyle(
+                                    fontSize: ZensokuTheme.baseHeading1Size),
                               ),
                             ),
+                            //feature toggles
+                            ...state.features.map((f) => ReusableToggleSwitch(
+                                key: Key(f.type.key),
+                                value: f.isEnabled,
+                                title: f.type.displayName,
+                                onChanged: (v) =>
+                                    settingsCubit.updateFeature(f.type.key, v)))
                           ],
                         );
                       },
@@ -158,6 +177,57 @@ class SettingsPage extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class ReusableToggleSwitch extends StatelessWidget {
+  const ReusableToggleSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.title,
+    this.subtitle,
+    this.activeColor,
+    this.inactiveColor,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? title;
+  final String? subtitle;
+  final Color? activeColor;
+  final Color? inactiveColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null)
+                Text(
+                  title!,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: activeColor,
+          inactiveThumbColor: inactiveColor,
+        ),
+      ],
     );
   }
 }

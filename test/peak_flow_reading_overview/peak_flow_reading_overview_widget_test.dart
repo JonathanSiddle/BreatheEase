@@ -10,6 +10,7 @@ import 'package:zensoku/logic/all_readings/view/all_readings_view.dart';
 import 'package:zensoku/logic/peak_flow_reading_overview/view/peak_flow_reading_overview_view.dart';
 import 'package:zensoku/logic/settings/settings_cubit.dart';
 import 'package:zensoku/logic/settings/settings_page.dart';
+import 'package:zensoku/models/app_state.dart';
 import 'package:zensoku/models/day_data.dart';
 import 'package:zensoku/models/features/app_feature.dart';
 import 'package:zensoku/models/peak_flow_reading.dart';
@@ -184,6 +185,7 @@ void main() {
         providers: [
           BlocProvider(
               create: (context) => SettingsCubit(
+                  appState: AppState.beta,
                   settingsRepository: settingsRepo,
                   featureRegistory: FeatureRegistory.defaultStates())),
         ],

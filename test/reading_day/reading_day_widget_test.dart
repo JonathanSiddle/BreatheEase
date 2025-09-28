@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:zensoku/logic/settings/settings_cubit.dart';
+import 'package:zensoku/models/app_state.dart';
 import 'package:zensoku/models/day_data.dart';
 import 'package:zensoku/models/features/app_feature.dart';
 import 'package:zensoku/models/peak_flow_reading.dart';
@@ -76,6 +77,7 @@ void main() {
         providers: [
           BlocProvider(
               create: (context) => SettingsCubit(
+                  appState: AppState.beta,
                   settingsRepository: settingsRepo,
                   featureRegistory: FeatureRegistory.defaultStates())),
         ],

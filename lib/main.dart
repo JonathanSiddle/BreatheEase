@@ -6,14 +6,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:wiredash/wiredash.dart';
 import 'package:zensoku/logic/peak_flow_reading_overview/view/peak_flow_reading_overview_view.dart';
 import 'package:zensoku/logic/settings/settings_cubit.dart';
+import 'package:zensoku/models/app_state.dart';
 import 'package:zensoku/models/features/app_feature.dart';
 import 'package:zensoku/models/features/repository_factory.dart';
 import 'package:zensoku/repositories/date_time_repository.dart';
 import 'package:zensoku/repositories/guid_id_repository.dart';
 import 'package:zensoku/repositories/peak_flow_readings_repository.dart';
 import 'package:zensoku/repositories/settings_repository.dart';
+import 'package:zensoku/static/global_strings.dart';
 import 'package:zensoku/util/log_util.dart';
 import 'package:zensoku/zensoku_theme.dart';
 
@@ -31,6 +34,8 @@ void main() async {
 
   await dotenv.load();
   final Map<String, bool> boolEnvValues = dotenv.getBoolValues();
+  final appState = AppState.fromString(dotenv.get(APP_STATE_ENV));
+  final wiredashKey = dotenv.get(WIREDASH_KEY);
   final FeatureRegistory fr = FeatureRegistory.withOverrides(boolEnvValues);
 
   final (
@@ -41,6 +46,8 @@ void main() async {
   ) = await getReposForFeatures(fr, loggingFactory);
 
   bootstrap(
+      wiredashKey: wiredashKey,
+      appState: appState,
       featureRegistory: fr,
       peakFlowReadingsRepository: peakFlowReadingsRepository,
       guidRepository: guidRepository,
@@ -50,13 +57,17 @@ void main() async {
 }
 
 void bootstrap(
-    {required FeatureRegistory featureRegistory,
+    {required String wiredashKey,
+    required AppState appState,
+    required FeatureRegistory featureRegistory,
     required PeakFlowReadingsRepository peakFlowReadingsRepository,
     required SettingsRepository settingsRepository,
     required GuidRepository guidRepository,
     required DateTimeRepository dateTimeRepository,
     required LoggingFactory loggingFactory}) {
   runApp(App(
+    wiredashKey: wiredashKey,
+    appState: appState,
     featureRegistory: featureRegistory,
     peakFlowReadingsRepository: peakFlowReadingsRepository,
     settingsRepository: settingsRepository,
@@ -68,7 +79,9 @@ void bootstrap(
 
 class App extends StatelessWidget {
   const App(
-      {required this.featureRegistory,
+      {required this.wiredashKey,
+      required this.appState,
+      required this.featureRegistory,
       required this.peakFlowReadingsRepository,
       required this.settingsRepository,
       required this.guidRepository,
@@ -76,6 +89,8 @@ class App extends StatelessWidget {
       required this.loggingFactory,
       super.key});
 
+  final AppState appState;
+  final String wiredashKey;
   final FeatureRegistory featureRegistory;
   final PeakFlowReadingsRepository peakFlowReadingsRepository;
   final SettingsRepository settingsRepository;
@@ -87,6 +102,9 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
+        RepositoryProvider.value(
+          value: appState,
+        ),
         RepositoryProvider.value(
           value: featureRegistory,
         ),
@@ -110,10 +128,13 @@ class App extends StatelessWidget {
         providers: [
           BlocProvider(
               create: (context) => SettingsCubit(
+                  appState: appState,
                   settingsRepository: settingsRepository,
                   featureRegistory: featureRegistory)),
         ],
         child: AppView(
+          wiredashKey: wiredashKey,
+          appState: appState,
           loggingFactory: loggingFactory,
         ),
       ),
@@ -123,10 +144,19 @@ class App extends StatelessWidget {
 
 //interject appView here to test logging in
 class AppView extends StatelessWidget {
-  AppView({super.key, required LoggingFactory loggingFactory})
-      : _logger = loggingFactory.getLogger('[PeakFlowReadingOverviewPage]');
+  AppView(
+      {super.key,
+      required String wiredashKey,
+      required LoggingFactory loggingFactory,
+      required AppState appState})
+      : _logger = loggingFactory.getLogger('[PeakFlowReadingOverviewPage]'),
+        _wiredashKey = wiredashKey,
+        _appState = appState;
 
   final Logger _logger;
+  final AppState _appState;
+  final String _wiredashKey;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   ThemeData _getTheme(ZensokuThemeMode themeMode) {
     switch (themeMode) {
@@ -145,15 +175,30 @@ class AppView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SettingsCubit, ZensokuThemeMode>(
+    return BlocBuilder<SettingsCubit, BreatheEaseSettings>(
       builder: (context, state) {
-        return MaterialApp(
+        final materialApp = MaterialApp(
           title: 'BreatheEase',
-          debugShowCheckedModeBanner: false,
-          theme: _getTheme(state),
+          navigatorKey: _navigatorKey,
+          debugShowCheckedModeBanner: _appState != AppState.release,
+          theme: _getTheme(state.mode),
           home: PeakFlowReadingOverviewPage(logger: _logger),
         );
+
+        if (state.isEnabled(FeatureType.userTelemetry) &&
+            _appState != AppState.dev) {
+          return wrapWithWiredash(materialApp);
+        } else {
+          return materialApp;
+        }
       },
     );
+  }
+
+  Widget wrapWithWiredash(Widget widgetToWrap) {
+    return Wiredash(
+        projectId: 'breatheease-hwc37ap',
+        secret: _wiredashKey,
+        child: widgetToWrap);
   }
 }
