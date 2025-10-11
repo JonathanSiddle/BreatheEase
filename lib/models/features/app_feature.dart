@@ -1,13 +1,24 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:zensoku/models/app_state.dart';
 
-enum FeatureCategory {
-  release('Release', 'Stable features for all users'),
-  beta('Beta', 'Preview for new features'),
+enum FeatureCategory implements Comparable<FeatureCategory> {
+  release('Release', 'Stable features for all users', 3),
+  beta('Beta', 'Preview for new features', 2),
+  dev('Dev', 'Dev features, very WIP', 0),
   ;
 
-  const FeatureCategory(this.displayName, this.description);
+  const FeatureCategory(this.displayName, this.description, this.level);
   final String displayName;
   final String description;
+  final int level;
+
+  @override
+  int compareTo(FeatureCategory other) => level.compareTo(other.level);
+
+  bool operator <(FeatureCategory other) => level < other.level;
+  bool operator <=(FeatureCategory other) => level <= other.level;
+  bool operator >(FeatureCategory other) => level > other.level;
+  bool operator >=(FeatureCategory other) => level >= other.level;
 }
 
 enum FeatureStatus {
@@ -16,6 +27,8 @@ enum FeatureStatus {
 }
 
 enum FeatureType {
+  unused('unused', 'unused', 'prevents null errors', FeatureCategory.release,
+      false, false),
   localStorage('local_storage', 'Local Storage', 'Store data locally on device',
       FeatureCategory.release, false, true),
   dataExport(
@@ -26,22 +39,41 @@ enum FeatureType {
       true,
       false),
   incidentTracking('incident_tracking', 'Incident Tracking',
-      'Track asthma incidents', FeatureCategory.beta, true, false),
-  userTelemetry('user_telemetry', 'Usage Information',
-      'Enable basic anonymised usage and ', FeatureCategory.beta, true, false),
-  firebaseStorage('firebase_storage', 'Firebase Storage',
-      'Save data to firebase', FeatureCategory.release, false, false),
-  useProduction('use_production', 'Use Production', 'Uses production server',
-      FeatureCategory.release, false, false);
+      'Track asthma incidents', FeatureCategory.dev, true, false),
+  userTelemetry(
+      'user_telemetry',
+      'Usage Information',
+      'Enable basic anonymised usage and ',
+      FeatureCategory.release,
+      true,
+      true);
 
   const FeatureType(this.key, this.displayName, this.description, this.category,
       this.userTogglable, this.isOnByDefault);
+
   final String key;
   final String displayName;
   final String description;
   final FeatureCategory category;
   final bool userTogglable;
   final bool isOnByDefault;
+
+  static FeatureType fromKey(String key) {
+    final featureType = _keyMap[key];
+
+    if (featureType == null) {
+      throw ArgumentError('No FeatureType found for $key');
+    }
+
+    return featureType;
+  }
+
+  static const Map<String, FeatureType> _keyMap = {
+    'local_storage': FeatureType.localStorage,
+    'data_export': FeatureType.dataExport,
+    'incident_tracking': FeatureType.incidentTracking,
+    'user_telemetry': FeatureType.userTelemetry,
+  };
 }
 
 class Feature {
@@ -59,12 +91,27 @@ class Feature {
 
   Feature copyWith({
     FeatureStatus? status,
-    double? rolloutPercentage,
   }) {
     return Feature(
       type: type,
       status: status ?? this.status,
     );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Feature &&
+          runtimeType == other.runtimeType &&
+          type == other.type &&
+          status == other.status;
+
+  @override
+  int get hashCode => Object.hash(type, status);
+
+  @override
+  String toString() {
+    return 'Feature: ${type.displayName}, enabled: $isEnabled';
   }
 }
 
@@ -79,7 +126,6 @@ class FeatureRegistory {
     }).toList();
   }
 
-  //TODO: add functionality to toggle firebase and prod off if local_storage is set
   FeatureRegistory.withOverrides(Map<String, bool> overrides) {
     _features = FeatureType.values.map((ft) {
       var status = ft.isOnByDefault;
@@ -104,6 +150,23 @@ class FeatureRegistory {
       return false;
     }
   }
+
+  List<Feature> allFeatures() => _features;
+
+  List<Feature> featuresCanBeToggledForAppState(AppState appState) {
+    final fc = switch (appState) {
+      AppState.release => FeatureCategory.release,
+      AppState.beta => FeatureCategory.beta,
+      AppState.dev => FeatureCategory.dev,
+    };
+
+    //if current category >= the current app state, allow feature
+    //we still want to show release features even when the
+    //current app state is beta
+    return _features
+        .where((f) => f.type.category >= fc && f.type.userTogglable)
+        .toList();
+  }
 }
 
 extension EnvExtensions on DotEnv {
@@ -114,7 +177,7 @@ extension EnvExtensions on DotEnv {
       final k = entry.key.toLowerCase();
       final v = entry.value;
 
-      if (v == 'false' || v == 'true') {
+      if (v == '' || v == 'true') {
         if (v == 'true') {
           boolKeys[k] = true;
         } else {

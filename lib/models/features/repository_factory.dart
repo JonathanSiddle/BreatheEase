@@ -24,7 +24,9 @@ Future<
   //settings repo stuff
   final info = await PackageInfo.fromPlatform();
   final packageApi = PubspecPackageApi(packageInfo: info);
-  settingsRepository = SettingsRepository(packageApi: packageApi);
+  settingsRepository = SettingsRepository(
+    packageApi: packageApi,
+  );
   dateTimeRepository = DateTimeRepository();
   const uuid = Uuid();
   guidRepository = GuidRepository(guidProvider: () => uuid.v4());
